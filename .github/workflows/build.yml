@@ -29,6 +29,23 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
+      - name: Find and move files to root
+        run: |
+          echo "Current directory:"
+          ls -la
+          PKG=$(find . -name "package.json" -not -path "*/node_modules/*" | head -1)
+          echo "package.json found at: $PKG"
+          DIR=$(dirname "$PKG")
+          echo "Directory: $DIR"
+          if [ "$DIR" != "." ]; then
+            echo "Moving files from $DIR to root"
+            cp -r "$DIR"/. .
+            echo "Files after move:"
+            ls -la
+          else
+            echo "Files already at root"
+          fi
+
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
 
