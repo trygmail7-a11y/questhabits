@@ -29,13 +29,14 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
-      - name: Extract ZIP and setup files
+      - name: Extract ZIP
         run: |
           ZIP=$(find . -name "*.zip" | head -1)
           unzip -o "$ZIP" -d ./unzipped
           PKG=$(find ./unzipped -name "package.json" -not -path "*/node_modules/*" | head -1)
           DIR=$(dirname "$PKG")
           cp -r "$DIR"/. .
+          cat app.json
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
@@ -46,14 +47,7 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build Android APK
-        run: |
-          export EXPO_TOKEN=${{ secrets.EXPO_TOKEN }}
-          eas build \
-            --platform android \
-            --profile preview \
-            --non-interactive \
-            --no-wait \
-            --project-id e501c2fa-95e5-4c48-9186-e9cb8e6679ca
+        run: eas build --platform android --profile preview --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
