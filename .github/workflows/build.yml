@@ -15,6 +15,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Show all files in repo
+        run: find . -not -path "*/node_modules/*" -not -path "*/.git/*" | sort
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -31,20 +34,13 @@ jobs:
 
       - name: Find and move files to root
         run: |
-          echo "Current directory:"
-          ls -la
           PKG=$(find . -name "package.json" -not -path "*/node_modules/*" | head -1)
           echo "package.json found at: $PKG"
           DIR=$(dirname "$PKG")
-          echo "Directory: $DIR"
           if [ "$DIR" != "." ]; then
-            echo "Moving files from $DIR to root"
             cp -r "$DIR"/. .
-            echo "Files after move:"
-            ls -la
-          else
-            echo "Files already at root"
           fi
+          ls -la
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
