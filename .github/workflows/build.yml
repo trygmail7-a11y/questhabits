@@ -15,9 +15,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Show all files in repo
-        run: find . -not -path "*/node_modules/*" -not -path "*/.git/*" | sort
-
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -32,15 +29,19 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
-      - name: Find and move files to root
+      - name: Extract ZIP and setup files
         run: |
-          PKG=$(find . -name "package.json" -not -path "*/node_modules/*" | head -1)
-          echo "package.json found at: $PKG"
+          ZIP=$(find . -name "*.zip" | head -1)
+          echo "ZIP found: $ZIP"
+          unzip -o "$ZIP" -d ./unzipped
+          PKG=$(find ./unzipped -name "package.json" -not -path "*/node_modules/*" | head -1)
+          echo "package.json at: $PKG"
           DIR=$(dirname "$PKG")
-          if [ "$DIR" != "." ]; then
-            cp -r "$DIR"/. .
-          fi
+          echo "Moving from: $DIR"
+          cp -r "$DIR"/. .
+          echo "Root files:"
           ls -la
+          cat package.json
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
