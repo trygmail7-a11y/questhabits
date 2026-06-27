@@ -30,11 +30,9 @@ jobs:
         run: npm install -g eas-cli@latest
 
       - name: Install Dependencies
-        working-directory: ./QuestHabits
         run: npm install --legacy-peer-deps --no-package-lock
 
       - name: Build Android APK
-        working-directory: ./QuestHabits
         run: eas build --platform android --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
