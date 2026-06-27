@@ -32,22 +32,24 @@ jobs:
       - name: Extract ZIP and setup files
         run: |
           ZIP=$(find . -name "*.zip" | head -1)
-          echo "ZIP found: $ZIP"
+          echo "ZIP: $ZIP"
           unzip -o "$ZIP" -d ./unzipped
           PKG=$(find ./unzipped -name "package.json" -not -path "*/node_modules/*" | head -1)
-          echo "package.json at: $PKG"
           DIR=$(dirname "$PKG")
-          echo "Moving from: $DIR"
           cp -r "$DIR"/. .
-          echo "Root files:"
           ls -la
-          cat package.json
+          cat app.json
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
 
       - name: EAS Login Check
         run: eas whoami
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Link EAS Project
+        run: eas init --id e501c2fa-95e5-4c48-9186-e9cb8e6679ca --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
