@@ -26,30 +26,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Extract ZIP if exists
-        run: |
-          ZIP=$(find . -name "*.zip" | head -1)
-          if [ -n "$ZIP" ]; then
-            echo "ZIP mila: $ZIP"
-            unzip -o "$ZIP" -d ./extracted
-            PKG=$(find ./extracted -name "package.json" | head -1)
-            DIR=$(dirname "$PKG")
-            echo "package.json mila: $DIR"
-            cp -r "$DIR"/. .
-            echo "Files copy ho gayi"
-          else
-            echo "ZIP nahi mila, seedha files use karunga"
-          fi
-          ls -la
-
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps --no-package-lock
 
+      - name: EAS Login Check
+        run: eas whoami
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: Build Android APK
-        run: eas build --platform android --profile preview --non-interactive
+        run: eas build --platform android --profile preview --non-interactive --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
