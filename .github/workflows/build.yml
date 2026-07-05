@@ -24,6 +24,21 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Extract ZIP if present
+        run: |
+          ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
+          if [ -n "$ZIP" ]; then
+            echo "Found ZIP: $ZIP"
+            unzip -o "$ZIP" -d extracted/
+            PKG=$(find extracted/ -name "package.json" -not -path "*/node_modules/*" | head -1)
+            DIR=$(dirname "$PKG")
+            echo "Moving from $DIR"
+            cp -r "$DIR"/. .
+            ls -la
+          else
+            echo "No ZIP found, using files directly"
+          fi
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
