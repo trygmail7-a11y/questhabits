@@ -24,20 +24,21 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.3'
+
       - name: Extract ZIP if present
         run: |
           ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
           if [ -n "$ZIP" ]; then
-            echo "Found ZIP: $ZIP"
             unzip -o "$ZIP" -d extracted/
             PKG=$(find extracted/ -name "package.json" -not -path "*/node_modules/*" | head -1)
             DIR=$(dirname "$PKG")
-            echo "Moving from $DIR"
             cp -r "$DIR"/. .
-            ls -la
-          else
-            echo "No ZIP found, using files directly"
           fi
+          ls -la
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
@@ -45,13 +46,17 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+      - name: Generate debug keystore
+        run: |
+          keytool -genkey -v -keystore android/app/debug.keystore \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 \
+            -validity 10000 -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
