@@ -1,50 +1,46 @@
-name: Build Android APK
+name: Build QuestHabits APK
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch: {}
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: EAS Build (Android APK)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project zip (if present)
-        run: |
-          if [ -f QuestHabits-Final-6.zip ]; then
-            echo "Found QuestHabits-Final-6.zip — extracting into repo root"
-            unzip -o billkhata.zip -d _extracted
-            if [ -d _extracted/QuestHabits-Final-6]; then
-              cp -r _extracted/QuestHabits-Final-6/. .
-            else
-              cp -r _extracted/. .
-            fi
-            rm -rf _extracted QuestHabits-Final-6.zip
-          else
-            echo "No QuestHabits-Final-6.zip found, assuming files are already at repo root"
-          fi
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Sanity check — confirm app.json exists at root
-        run: test -f app.json && echo "app.json found, structure looks correct" || (echo "app.json missing at repo root — check the zip's internal folder structure" && exit 1)
-
-      - name: Setup Node
+      - name: Setup Node 18
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
-      - name: Setup Expo & EAS
-        uses: expo/expo-github-action@v8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build APK with EAS
-        run: eas build --platform android --profile preview --non-interactive
-        
+          name: QuestHabits-v1.0.0
+          path: android/app/build/outputs/apk/release/app-release*.apk
+          retention-days: 30
