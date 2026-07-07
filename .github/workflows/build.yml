@@ -19,18 +19,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle 8.6
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
+
       - name: Extract ZIP if present
         run: |
           ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
           if [ -n "$ZIP" ]; then
-            echo "ZIP found: $ZIP"
             unzip -o "$ZIP" -d extracted/
             PKG=$(find extracted/ -name "package.json" -not -path "*/node_modules/*" | head -1)
             DIR=$(dirname "$PKG")
-            echo "Copying from: $DIR"
             cp -r "$DIR"/. .
           fi
-          ls android/app/
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -38,18 +40,14 @@ jobs:
       - name: Accept Android Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
       - name: Write Keystore from Secret
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
-          echo "Keystore written"
 
       - name: Build Release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon \
+          gradle assembleRelease --no-daemon \
             -Pandroid.injected.signing.store.file=release.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEY_STORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
