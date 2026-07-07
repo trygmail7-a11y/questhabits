@@ -1,4 +1,4 @@
-name: Build QuestHabits APK
+name: Build QuestHabits Release APK
 
 on:
   push:
@@ -19,11 +19,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Node 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -33,39 +28,33 @@ jobs:
         run: |
           ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
           if [ -n "$ZIP" ]; then
+            echo "ZIP found: $ZIP"
             unzip -o "$ZIP" -d extracted/
             PKG=$(find extracted/ -name "package.json" -not -path "*/node_modules/*" | head -1)
             DIR=$(dirname "$PKG")
+            echo "Copying from: $DIR"
             cp -r "$DIR"/. .
           fi
           ls -la
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+          ls android/app/
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate debug keystore
-        run: |
-          if [ ! -f android/app/debug.keystore ]; then
-            keytool -genkey -v -keystore android/app/debug.keystore \
-              -alias androiddebugkey -keyalg RSA -keysize 2048 \
-              -validity 10000 -storepass android -keypass android \
-              -dname "CN=Android Debug,O=Android,C=US"
-            echo "Keystore created"
-          else
-            echo "Keystore already exists, skipping"
-          fi
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
       - name: Build Release APK
         run: |
           cd android
-          gradle assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: QuestHabits-v1.0.0
-          path: android/app/build/outputs/apk/release/app-release*.apk
+          name: QuestHabits-v1.0.0-RELEASE
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
