@@ -19,11 +19,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.3'
-
       - name: Extract ZIP if present
         run: |
           ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
@@ -35,7 +30,6 @@ jobs:
             echo "Copying from: $DIR"
             cp -r "$DIR"/. .
           fi
-          ls -la
           ls android/app/
 
       - name: Setup Android SDK
@@ -47,10 +41,19 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Write Keystore from Secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+          echo "Keystore written"
+
       - name: Build Release APK
         run: |
           cd android
-          gradle assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=release.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEY_STORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
