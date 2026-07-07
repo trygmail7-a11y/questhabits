@@ -34,6 +34,25 @@ jobs:
             cp -r "$DIR"/. .
           fi
 
+      - name: Fix launcher icons
+        run: |
+          sudo apt-get install -y imagemagick
+          declare -A sizes=(
+            ["mipmap-mdpi"]=48
+            ["mipmap-hdpi"]=72
+            ["mipmap-xhdpi"]=96
+            ["mipmap-xxhdpi"]=144
+            ["mipmap-xxxhdpi"]=192
+          )
+          for folder in "${!sizes[@]}"; do
+            size="${sizes[$folder]}"
+            dir="android/app/src/main/res/$folder"
+            mkdir -p "$dir"
+            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher.png"
+            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher_round.png"
+            echo "Created $folder icons (${size}x${size})"
+          done
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
