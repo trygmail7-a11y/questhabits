@@ -24,19 +24,30 @@ jobs:
         with:
           gradle-version: '8.6'
 
-      - name: Extract ZIP if present
+      - name: Extract ZIP and merge files
         run: |
           ZIP=$(find . -name "*.zip" -not -path "*/.git/*" | head -1)
           if [ -n "$ZIP" ]; then
+            echo "ZIP found: $ZIP"
             unzip -o "$ZIP" -d extracted/
-            PKG=$(find extracted/ -name "package.json" -not -path "*/node_modules/*" | head -1)
-            DIR=$(dirname "$PKG")
-            cp -r "$DIR"/. .
+            echo "Extracted contents:"
+            ls -la extracted/
+            if [ -d "extracted/android" ]; then
+              cp -r extracted/android/. android/ 2>/dev/null || true
+              echo "Android folder merged"
+            fi
+            find extracted/ -maxdepth 1 -type f | while read f; do
+              cp "$f" . 2>/dev/null || true
+            done
           fi
+          echo "Android dir:"
+          ls -la android/ 2>/dev/null || echo "No android dir"
+          echo "Assets:"
+          ls -la android/app/src/main/assets/ 2>/dev/null || echo "No assets"
 
       - name: Fix launcher icons
         run: |
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y imagemagick -q
           for folder in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             dir="android/app/src/main/res/$folder"
             mkdir -p "$dir"
@@ -45,8 +56,8 @@ jobs:
             [ "$folder" = "mipmap-xhdpi" ] && size=96
             [ "$folder" = "mipmap-xxhdpi" ] && size=144
             [ "$folder" = "mipmap-xxxhdpi" ] && size=192
-            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher.png"
-            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher_round.png"
+            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher.png" 2>/dev/null || true
+            convert -size ${size}x${size} xc:#6366F1 "$dir/ic_launcher_round.png" 2>/dev/null || true
           done
 
       - name: Setup Android SDK
@@ -57,9 +68,7 @@ jobs:
 
       - name: Write Keystore from Secret
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $GITHUB_WORKSPACE/android/app/release.keystore
-          echo "Keystore at: $GITHUB_WORKSPACE/android/app/release.keystore"
-          ls -la $GITHUB_WORKSPACE/android/app/release.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
 
       - name: Build Release APK
         run: |
